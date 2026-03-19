@@ -102,8 +102,9 @@ create_dylib_shim() {
 	clang_bin=$(xcrun --sdk "$sdk_name" -f clang)
 
 	# Generate a real dylib shim so Xcode copy-framework steps can bitcode-strip it.
-	# The app links static archives separately via OTHER_LDFLAGS; this shim is for
-	# legacy file refs that still expect dylib filenames.
+	# On iOS, OTHER_LDFLAGS still uses unsuffixed -l... entries that resolve the
+	# static archives; these shims are only for project file refs that still name
+	# explicit .dylib files.
 	"$clang_bin" \
 		-dynamiclib \
 		-arch arm64 \
@@ -122,8 +123,9 @@ create_all_shims_for_prefix() {
 	min_flag=$3
 	empty_archive_name=$(basename "$4")
 
-	# Framework file refs in the legacy Xcode project still point at .dylib filenames.
-	# Generate compatibility dylibs from static archives.
+	# The existing Xcode project file still has Frameworks / Copy Frameworks refs
+	# that point at explicit .dylib filenames. Generate compatibility dylibs from
+	# the static archives for those refs.
 	create_dylib_shim "$prefix_dir" "$sdk_name" "$min_flag" "$empty_archive_name" "libboost_atomic-mt.dylib" "libboost_atomic.a"
 	create_dylib_shim "$prefix_dir" "$sdk_name" "$min_flag" "$empty_archive_name" "libboost_charconv-mt.dylib" "libboost_charconv.a"
 	create_dylib_shim "$prefix_dir" "$sdk_name" "$min_flag" "$empty_archive_name" "libboost_chrono-mt.dylib" "libboost_chrono.a"
